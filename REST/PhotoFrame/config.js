@@ -13,18 +13,20 @@
 // limitations under the License.
 
 // This file contains the configuration options for this sample app.
-
+const secrets = require('./secrets.js');
 const config = {};
 
 // The OAuth client ID from the Google Developers console.
-config.oAuthClientID = 'ADD YOUR CLIENT ID';
+config.oAuthClientID = secrets.oAuthClientID;
 
 // The OAuth client secret from the Google Developers console.
-config.oAuthclientSecret = 'ADD YOUR CLIENT SECRET';
+config.oAuthclientSecret = secrets.oAuthclientSecret;
 
 // The callback to use for OAuth requests. This is the URL where the app is
 // running. For testing and running it locally, use 127.0.0.1.
-config.oAuthCallbackUrl = 'http://127.0.0.1:8080/auth/google/callback';
+config.oAuthCallbackUrl = secrets.oAuthCallbackUrl;
+
+config.APIKey = secrets.APIKey;
 
 // The port where the app should listen for requests.
 config.port = 8080;
@@ -34,6 +36,9 @@ config.port = 8080;
 config.scopes = [
   'https://www.googleapis.com/auth/photoslibrary.readonly',
   'profile',
+  // 'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/drive.metadata',
+  // 'https://www.googleapis.com/auth/drive.file',
 ];
 
 // The number of photos to load for search requests.
@@ -48,4 +53,5 @@ config.albumPageSize = 50;
 // The API end point to use. Do not change.
 config.apiEndpoint = 'https://photoslibrary.googleapis.com';
 
+config.driveApiEndpoint = 'https://www.googleapis.com/';
 module.exports = config;

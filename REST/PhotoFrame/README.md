@@ -1,5 +1,12 @@
 # Photo Frame Sample
 
+## Useful links
+
+- [https://developers.google.com/drive/api/v3/manage-shareddrives]
+- [https://developers.google.com/picker/docs]
+- [https://developers.google.com/photos/library/reference/rest#rest-resource:-v1.mediaitems]
+- [https://github.com/googleapis/google-api-nodejs-client/tree/master/samples/drive]
+
 This is a Node.js sample application for the [Google Photos Library API](https://developers.google.com/photos).
 
 This sample shows how to connect an app with Google Photos through OAuth 2.0 and display a user's photos and albums in an "online photo frame".
