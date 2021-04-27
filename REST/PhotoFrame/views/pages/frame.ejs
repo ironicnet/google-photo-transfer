@@ -25,14 +25,45 @@
 <div class="floating-button">
     <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent" id="startSlideshow">
         <i class="material-icons">fullscreen</i>
-		<span class="float-btn-label">View in frame</span>
+		<span class="float-btn-label">Transfer</span>
     </button>
 </div>
+
+<dialog id="dialog" class="mdl-dialog" style="width:80%;height: 90%;">
+	<h3 class="mdl-dialog__title">Transfer photos</h3>
+	<div class="mdl-dialog__content">
+		<p>
+		  Destination
+		</p>
+		<section class="file-browser">
+			<div>
+				<div class="path"></div>
+			</div>
+			<div class="loading mdl-spinner mdl-js-spinner is-active"></div>
+			<div class="container" style="max-height: 250px;overflow-y: scroll;"></div>
+			<div class="empty" style="display: none">
+				<img src="/imgs/null-results.png" />
+				<p>No files, try searching again</p>
+			</div>
+		</section>
+		<p>
+		  This are the selected media
+		</p>
+		<section class="photo-review" style="max-height: 250px;overflow-y: scroll;">
+		</section>
+	</div>
+	<div class="mdl-dialog__actions">
+	  <button type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent btnUpload">Upload</button>
+	  <button type="button" class="mdl-button btnCancel">Cancel</button>
+	</div>
+  </dialog>
+  
 
 <% include ../partials/dialogs %>
 
 <% include ../partials/js %>
 <script src="/fancybox/jquery.fancybox.min.js"></script>
 <script src="/js/frame.js"></script>
+<script src="/js/files.js"></script>
 
 <% include ../partials/footer %>

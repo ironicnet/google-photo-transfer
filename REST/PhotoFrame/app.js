@@ -83,6 +83,13 @@ app.set('view engine', 'ejs');
 // const storage = persist.create({dir: 'persist-storage/'});
 // storage.init();
 
+const appStorage = persist.create({
+	dir: 'persist-app-storage/'
+  });
+  appStorage.init();
+
+app.storage = appStorage;
+
 // Set up OAuth 2.0 authentication through the passport.js library.
 // const passport = require('passport');
 // const auth = require('./auth');
@@ -214,7 +221,7 @@ app.get('/files', (req, res) => {
 
 // Start the server
 server.listen(config.port, () => {
-  console.log(`App listening on port ${config.port}`);
+  console.log(`App listening on port http://localhost:${config.port}`);
   console.log('Press Ctrl+C to quit.');
 });
 

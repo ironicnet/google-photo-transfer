@@ -231,3 +231,18 @@ p .gp-button {
 .filter-group:last-child {
   padding-bottom: 2vh;
 }
+.photo-card {
+  display: inline-block;
+  width: auto;
+  margin: 1px 5px;
+}
+.photo-card.selected {
+  background-color: rgb(255,64,129);
+}
+.photo-card > .mdl-card__actions {
+  text-overflow: ellipsis;
+}
+.photo-card > mdl-card__menu > .mdl-switch {
+  padding-bottom: 50px;
+  padding-left: 30px;
+}

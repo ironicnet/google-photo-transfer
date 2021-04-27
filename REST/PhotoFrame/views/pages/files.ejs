@@ -1,20 +1,19 @@
 <% include ../partials/head %>
+<div id="files">
+	<section class="file-browser">
+		<div>
+			<div class="path"></div>
+		</div>
+		<div class="loading mdl-spinner mdl-js-spinner is-active"></div>
+		<div class="container"></div>
+		<div class="empty" style="display: none">
+			<img src="/imgs/null-results.png" />
+			<p>No files, try searching again</p>
+		</div>
+	</section>
+</section>
 
 <% include ../partials/dialogs %>
-
-
-<div>
-	<h2>Files test</h2>
-	<div id="files-path"></div>
-	<div id="files-container"></div>
-	<div id="files_empty" style="display:none">
-	 		<img src="/imgs/null-results.png">
-	 		<p>No files, try searching again</p>
-	</div>
-</div>
-
-
-
 <% include ../partials/js %>
 <script src="/js/files.js"></script>
 

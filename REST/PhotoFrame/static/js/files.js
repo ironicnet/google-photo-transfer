@@ -17,10 +17,10 @@
 // The backend returns a list of albums from the Library API that is rendered
 // here in a list with a cover image, title and a link to open it in Google
 // Photos.
-function listFolders(parent, up) {
+function listFolders(selector, parent, up) {
   hideError();
-  showLoadingDialog();
-  $('#albums').empty();
+  $(selector + ' .loading').show();
+  $(selector + ' .container').empty();
 
   const searchParameters = {
     parent
@@ -35,41 +35,48 @@ function listFolders(parent, up) {
     success: (data) => {
       console.log('Loaded folders: ', data);
 
-      hideLoadingDialog();
-      showFolders(data.parameters, data.folders, up);
+      $(selector + ' .loading').hide();
+      showFolders(selector, data.parameters, data.folders, up);
     },
     error: (data) => {
-      hideLoadingDialog();
+      $(selector + ' .loading').hide();
       handleError('Couldn\'t load folders', data);
     }
   });
 }
-function showFolders(source, folders, up) {
-  $('#files-container').empty();
+function showFolders(selector, source, folders, up) {
+  $(selector + ' .container').empty();
 
   // Display the length and the source of the items if set.
   if (source && folders) {
-    $('#files-count').text(folders.length);
+    $(selector + ' .count').text(folders.length);
     // $('#files-path').text(JSON.stringify(source));
     const linkToFolder = $('<a />')
     .attr('href', `?folder=${up || ''}`)
-    .text(JSON.stringify(source));
-    $('#files-path').empty();
-    $('#files-path').append(linkToFolder);
+    .text('Go up')
+    .on('click', (e) => {
+      e.preventDefault();
+      listFolders(selector, up, '')
+    });
+     $(selector + ' .path').empty();
+     $(selector + ' .path').append(linkToFolder);
   } else {
-    $('#files-count').text(0);
-    $('#files-path').empty();
-    $('#files-path').text('No folder search selected');
+     $(selector + ' .count').text(0);
+     $(selector + ' .path').empty();
+     $(selector + ' .path').text('No folder search selected');
   }
 
   // Show an error message and disable the slideshow button if no items are
   // loaded.
   if (!folders || !folders.length) {
-    $('#files_empty').show();
+    $(selector + ' .empty').show();
   } else {
-    $('#files_empty').hide();
+    $(selector + ' .empty').hide();
   }
 
+  const container = $('<ul />')
+  .attr('class', 'mdl-list');
+  $(selector + ' .container').append(container);
   // Loop over each media item and render it.
   $.each(folders, (i, folder) => {
     // Compile the caption, conisting of the description, model and time.
@@ -83,15 +90,20 @@ function showFolders(source, folders, up) {
     // full sized image is being loaded.
     // The original width and height are part of the mediaMetadata of
     // an image media item from the API.
-    const container = $('<ul />');
     const linkToFolder = $('<a />')
     .attr('href', `?folder=${folder.id}&up=${source.parent}`)
+    .on('click', (e) => {
+      e.preventDefault();
+      listFolders(selector, folder.id, source.parent)
+    })
+    .attr('class', 'mdl-list__item-primary-content')
     .text(captionText);
     // .on('click', (e) => {
     //   e.preventDefault();
     //   listFolders(folder.id);
     // })
     const fileItem = $('<li />')
+                        .attr('class', 'mdl-list__item')
                         .attr('data-id', folder.id);
     fileItem.append(linkToFolder);
     
@@ -99,14 +111,14 @@ function showFolders(source, folders, up) {
 
     // Add the link (consisting of the thumbnail image and caption) to
     // container.
-    $('#files-container').append(container);
   });
 };
 $(document).ready(() => {
   let params = (new URL(document.location)).searchParams;
   let folder = params.get('folder');
   let up = params.get('up');
-  // Load the list of albums from the backend when the page is ready.
-  listFolders(folder, up);
 
+  if ($('#files').length > 0) {
+    listFolders('#files .file-browser', folder, up);
+  }
 });

@@ -119,6 +119,76 @@ async function libraryApiSearch(authToken, parameters, logger, config) {
 	logger.info('Search complete.');
 	return { photos, parameters, error };
 }
+async function libraryApiGet(authToken, selected, logger, config) {
+	let photos = [];
+	let error = null;
+	const parameters = {
+		mediaItemIds: selected,
+	};
+
+	try {
+		// Loop while the number of photos threshold has not been met yet
+		// and while there is a nextPageToken to load more items.
+		do {
+			logger.info(
+				`Submitting get with parameters: ${JSON.stringify(parameters)}`,
+			);
+
+			// Make a POST request to search the library or album
+			const result = await request.post(
+				config.apiEndpoint + '/v1/mediaItems:batchGet',
+				{
+					headers: { 'Content-Type': 'application/json' },
+					json: parameters,
+					auth: { bearer: authToken },
+				},
+			);
+
+			logger.debug(`Response: ${result}`);
+
+			// The list of media items returned may be sparse and contain missing
+			// elements. Remove all invalid elements.
+			// Also remove all elements that are not images by checking its mime type.
+			// Media type filters can't be applied if an album is loaded, so an extra
+			// filter step is required here to ensure that only images are returned.
+			const items =
+				result && result.mediaItemResults
+					? result.mediaItemResults
+							.filter((x) => x) // Filter empty or invalid items.
+							// Only keep media items with an image mime type.
+							.filter((x) => x.mimeType && x.mimeType.startsWith('image/'))
+					: [];
+
+			photos = photos.concat(items);
+
+			// Set the pageToken for the next request.
+			parameters.pageToken = result.nextPageToken;
+
+			logger.verbose(
+				`Found ${items.length} images in this request. Total images: ${photos.length}`,
+			);
+
+			// Loop until the required number of photos has been loaded or until there
+			// are no more photos, ie. there is no pageToken.
+		} while (
+			photos.length < config.photosToLoad &&
+			parameters.pageToken != null
+		);
+	} catch (err) {
+		// If the error is a StatusCodeError, it contains an error.error object that
+		// should be returned. It has a name, statuscode and message in the correct
+		// format. Otherwise extract the properties.
+		error = err.error.error || {
+			name: err.name,
+			code: err.statusCode,
+			message: err.message,
+		};
+		logger.error(error);
+	}
+
+	logger.info('Search complete.');
+	return { photos, parameters, error };
+}
 
 // Returns a list of all albums owner by the logged in user from the Library
 // API.
@@ -182,7 +252,7 @@ function photosApi(app, logger, config) {
 	app.post('/loadFromSearch', async (req, res) => {
 		const authToken = req.user.token;
 
-		logger.info('Loading images from search.');
+		logger.info('Loading images from search.', !!authToken);
 		logger.silly('Received form data: ', req.body);
 
 		// Construct a filter for photos.
@@ -310,7 +380,7 @@ function photosApi(app, logger, config) {
 		const userId = req.user.profile.id;
 		const authToken = req.user.token;
 
-		logger.info('Loading queue.');
+		logger.info('Loading queue.', userId, !!authToken);
 
 		// Attempt to load the queue from cache first. This contains full mediaItems
 		// that include URLs. Note that these expire after 1 hour. The TTL on this
@@ -342,6 +412,44 @@ function photosApi(app, logger, config) {
 			res.status(200).send({});
 		}
 	});
+
+	// Returns a list of the media items that the user has selected to
+	// be shown on the photo frame.
+	// If the media items are still in the temporary cache, they are directly
+	// returned, otherwise the search parameters that were used to load the photos
+	// are resubmitted to the API and the result returned.
+	app.get('/getSelected', async (req, res) => {
+		const userId = req.user.profile.id;
+		const authToken = req.user.token;
+		const selected = req.query.ids || [];
+
+		logger.info('Loading selected.', userId, !!authToken, selected);
+
+		// Attempt to load the queue from cache first. This contains full mediaItems
+		// that include URLs. Note that these expire after 1 hour. The TTL on this
+		// cache has been set to this limit and it is cleared automatically when this
+		// time limit is reached. Caching this data makes the app more responsive,
+		// as it can be returned directly from memory whenever the user navigates
+		// back to the photo frame.
+		const cachedPhotos = await mediaItemCache.getItem(userId);
+
+		if (cachedPhotos) {
+			const filtered = cachedPhotos.filter(photo => selected.includes(photo.id))
+			// Items are still cached. Return them.
+			logger.verbose('Returning cached photos.', filtered, cachedPhotos);
+			res
+				.status(200)
+				.send({ photos: filtered, parameters: selected });
+		} else {
+			// Items are no longer cached. Resubmit the stored search query and return
+			// the result.
+			logger.verbose(
+				`Resubmitting filter search ${JSON.stringify(selected)}`,
+			);
+			const data = await libraryApiGet(authToken, selected, logger, config);
+			returnPhotos(res, userId, data, selected, false);
+		}
+	});
 }
 
 // If the supplied result is succesful, the parameters and media items are
@@ -351,7 +459,7 @@ function photosApi(app, logger, config) {
 // the data is handled as an error and not cached. See returnError instead.
 // Otherwise, the media items are cached, the search parameters are stored
 // and they are returned in the response.
-function returnPhotos(res, userId, data, searchParameter) {
+function returnPhotos(res, userId, data, searchParameter, cache = true) {
 	if (data.error) {
 		returnError(res, data);
 	} else {
@@ -361,12 +469,13 @@ function returnPhotos(res, userId, data, searchParameter) {
 		delete searchParameter.pageToken;
 		delete searchParameter.pageSize;
 
-		// Cache the media items that were loaded temporarily.
-		mediaItemCache.setItemSync(userId, data.photos);
-		// Store the parameters that were used to load these images. They are used
-		// to resubmit the query after the cache expires.
-		storage.setItemSync(userId, { parameters: searchParameter });
-
+		if (cache) {
+			// Cache the media items that were loaded temporarily.
+			mediaItemCache.setItemSync(userId, data.photos);
+			// Store the parameters that were used to load these images. They are used
+			// to resubmit the query after the cache expires.
+			storage.setItemSync(userId, { parameters: searchParameter });
+		}
 		// Return the photos and parameters back int the response.
 		res.status(200).send({ photos: data.photos, parameters: searchParameter });
 	}
